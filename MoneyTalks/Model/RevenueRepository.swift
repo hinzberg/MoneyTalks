@@ -14,6 +14,17 @@ final class RevenueRepository {
 
     private(set) var revenues: [Revenue] = []
 
+    var searchText: String = ""
+
+    var filteredRevenues: [Revenue] {
+        let searchTerm = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !searchTerm.isEmpty else { return revenues }
+        return revenues.filter { revenue in
+            [revenue.beneficiaryOrPayer, revenue.purpose, revenue.bookingText]
+                .contains { $0.localizedCaseInsensitiveContains(searchTerm) }
+        }
+    }
+
     func add(_ revenue: Revenue) {
         revenues.append(revenue)
     }
@@ -24,6 +35,10 @@ final class RevenueRepository {
 
     func remove(_ revenue: Revenue) {
         revenues.removeAll { $0 == revenue }
+    }
+
+    func remove(id: Revenue.ID) {
+        revenues.removeAll { $0.id == id }
     }
 
     func remove(at index: Int) {

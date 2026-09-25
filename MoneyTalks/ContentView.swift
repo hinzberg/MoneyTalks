@@ -18,6 +18,7 @@ struct ContentView: View {
 
     var body: some View {
         @Bindable var importCoordinator = importCoordinator
+        @Bindable var repository = repository
 
         Group {
             if repository.revenues.isEmpty {
@@ -26,7 +27,7 @@ struct ContentView: View {
                                        description: Text("Use File ▸ Import CSV… to load transactions."))
             } else {
                 List(selection: $selectedRevenueID) {
-                    ForEach(repository.revenues) { revenue in
+                    ForEach(repository.filteredRevenues) { revenue in
                         RevenueRowView(revenue: revenue)
                             .tag(revenue.id)
                     }
@@ -35,6 +36,10 @@ struct ContentView: View {
             }
         }
         .frame(minWidth: 640, minHeight: 400)
+        .searchable(text: $repository.searchText, placement: .toolbar, prompt: "Search")
+        .onChange(of: repository.searchText) {
+            clearSelectionIfFilteredOut()
+        }
         .inspector(isPresented: $isInspectorPresented) {
             inspector
         }
@@ -76,7 +81,12 @@ struct ContentView: View {
 
     private var selectedRevenue: Revenue? {
         guard let selectedRevenueID else { return nil }
-        return repository.revenues.first { $0.id == selectedRevenueID }
+        return repository.filteredRevenues.first { $0.id == selectedRevenueID }
+    }
+
+    private func clearSelectionIfFilteredOut() {
+        guard let selectedRevenueID, selectedRevenue == nil else { return }
+        self.selectedRevenueID = nil
     }
 
     private func importFiles(_ result: Result<[URL], Error>) {
@@ -90,15 +100,16 @@ struct ContentView: View {
     }
 
     private func removeRevenues(atOffsets offsets: IndexSet) {
-        repository.remove(atOffsets: offsets)
+        let filteredRevenues = repository.filteredRevenues
+        for offset in offsets where filteredRevenues.indices.contains(offset) {
+            repository.remove(id: filteredRevenues[offset].id)
+        }
     }
 
     private static func isCancellation(_ error: Error) -> Bool {
         (error as? CocoaError)?.code == .userCancelled
     }
 }
-
-
 
 #Preview {
     ContentView()
