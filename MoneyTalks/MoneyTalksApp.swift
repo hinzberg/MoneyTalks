@@ -9,9 +9,23 @@ import SwiftUI
 
 @main
 struct MoneyTalksApp: App {
+
+    @State private var repository = RevenueRepository()
+    @State private var importCoordinator = CSVImportCoordinator()
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environment(repository)
+                .environment(importCoordinator)
+        }
+        .commands {
+            CommandGroup(after: .newItem) {
+                Button("Import CSV…") {
+                    importCoordinator.isImportingCSV = true
+                }
+                .keyboardShortcut("i", modifiers: [.command, .shift])
+            }
         }
     }
 }
