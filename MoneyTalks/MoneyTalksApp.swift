@@ -12,6 +12,7 @@ import SwiftUI
 struct MoneyTalksApp: App {
 
     @State private var repository: RevenueRepository
+    @State private var walletRepository: WalletRepository
     @State private var importCoordinator = CSVImportCoordinator()
 
     private let modelContainer: ModelContainer
@@ -23,6 +24,7 @@ struct MoneyTalksApp: App {
         modelContainer = container
         modelContext = context
         _repository = State(initialValue: RevenueRepository(modelContext: context))
+        _walletRepository = State(initialValue: WalletRepository(modelContext: context))
     }
 
     var body: some Scene {
@@ -31,6 +33,7 @@ struct MoneyTalksApp: App {
                 .modelContainer(modelContainer)
                 .modelContext(modelContext)
                 .environment(repository)
+                .environment(walletRepository)
                 .environment(importCoordinator)
         }
         .commands {
@@ -45,9 +48,9 @@ struct MoneyTalksApp: App {
 
     private static func makeModelContainer() -> ModelContainer {
         do {
-            return try ModelContainer(for: Revenue.self)
+            return try ModelContainer(for: Revenue.self, Wallet.self)
         } catch {
-            return try! ModelContainer(for: Revenue.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+            return try! ModelContainer(for: Revenue.self, Wallet.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         }
     }
 }
