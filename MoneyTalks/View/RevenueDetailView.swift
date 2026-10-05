@@ -40,7 +40,8 @@ struct RevenueDetailView: View {
             }
             Section("Classification") {
                 LabeledContent("Category") { text(revenue.category) }
-                LabeledContent("Categorized Purpose") { text(revenue.categorizedPurpose) }
+                LabeledContent("Wallet") { text(revenue.wallet) }
+                LabeledContent("Wallet Confirmed") { Text(revenue.walletConfirmed ? "Yes" : "No") }
                 LabeledContent("Note") { text(revenue.note) }
             }
         }
@@ -84,5 +85,5 @@ struct RevenueDetailView: View {
         info: "Umsatz vorgemerkt",
         category: nil,
         note: "",
-        categorizedPurpose: ""))
+        wallet: ""))
 }

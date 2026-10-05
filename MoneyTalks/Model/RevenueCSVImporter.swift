@@ -147,7 +147,7 @@ struct RevenueCSVImporter: Sendable {
             info: try value(.info),
             category: optionalValue(.category),
             note: "",
-            categorizedPurpose: ""
+            wallet: ""
         )
     }
 

@@ -2,6 +2,7 @@
 //  MoneyTalks
 //  Created by Holger Hinzberg on 25.09.26.
 
+import SwiftData
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -22,9 +23,13 @@ struct InboxView: View {
                 ContentUnavailableView("No Revenues",
                                        systemImage: "list.bullet.rectangle",
                                        description: Text("Use File ▸ Import CSV… to load transactions."))
+            } else if repository.filteredInboxRevenues.isEmpty {
+                ContentUnavailableView("Inbox is Empty",
+                                       systemImage: "tray",
+                                       description: Text("All revenues are confirmed in the wallet or do not match the search."))
             } else {
                 List(selection: $selectedRevenueID) {
-                    ForEach(repository.filteredRevenues) { revenue in
+                    ForEach(repository.filteredInboxRevenues) { revenue in
                         RevenueRowView(revenue: revenue)
                             .tag(revenue.id)
                     }
@@ -85,7 +90,7 @@ struct InboxView: View {
 
     private var selectedRevenue: Revenue? {
         guard let selectedRevenueID else { return nil }
-        return repository.filteredRevenues.first { $0.id == selectedRevenueID }
+        return repository.filteredInboxRevenues.first { $0.id == selectedRevenueID }
     }
 
     private func clearSelectionIfFilteredOut() {
@@ -104,9 +109,9 @@ struct InboxView: View {
     }
 
     private func removeRevenues(atOffsets offsets: IndexSet) {
-        let filteredRevenues = repository.filteredRevenues
-        for offset in offsets where filteredRevenues.indices.contains(offset) {
-            repository.remove(id: filteredRevenues[offset].id)
+        let inboxRevenues = repository.filteredInboxRevenues
+        for offset in offsets where inboxRevenues.indices.contains(offset) {
+            repository.remove(id: inboxRevenues[offset].id)
         }
     }
 
@@ -116,7 +121,8 @@ struct InboxView: View {
 }
 
 #Preview {
-    InboxView()
-        .environment(RevenueRepository())
+    let container = try! ModelContainer(for: Revenue.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    return InboxView()
+        .environment(RevenueRepository(modelContext: container.mainContext))
         .environment(CSVImportCoordinator())
 }

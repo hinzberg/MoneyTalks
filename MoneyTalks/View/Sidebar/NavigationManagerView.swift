@@ -43,6 +43,10 @@ struct NavigationManagerView: View {
 
 struct NavigationManagerView_Previews: PreviewProvider {
     static var previews: some View {
-        NavigationManagerView()
+        let container = try! ModelContainer(for: Revenue.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        return NavigationManagerView()
+            .modelContainer(container)
+            .environment(RevenueRepository(modelContext: container.mainContext))
+            .environment(CSVImportCoordinator())
     }
 }
