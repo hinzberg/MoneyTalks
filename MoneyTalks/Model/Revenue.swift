@@ -1,15 +1,34 @@
-//
 //  Revenue.swift
 //  MoneyTalks
-//
 //  Created by Holger Hinzberg on 25.09.26.
-//
 
+import CryptoKit
 import Foundation
 
 struct Revenue: Identifiable, Codable, Hashable, Sendable {
 
-    let id = UUID()
+    /// Deterministic UUID derived from "Kundenreferenz (End-to-End)", or from booking date, purpose and beneficiary combined
+    var id: UUID { Self.stableUUID(from: identifier) }
+
+    private var identifier: String {
+        if let endToEndReference, !endToEndReference.isEmpty {
+            return endToEndReference
+        }
+        return "\(Self.bookingDay(bookingDate))|\(purpose)|\(beneficiaryOrPayer)"
+    }
+
+    private static func bookingDay(_ date: Date) -> String {
+        let components = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d-%02d-%02d", components.year ?? 0, components.month ?? 0, components.day ?? 0)
+    }
+
+    private static func stableUUID(from identifier: String) -> UUID {
+        var bytes = Array(SHA256.hash(data: Data(identifier.utf8)).prefix(16))
+        bytes[6] = (bytes[6] & 0x0F) | 0x40
+        bytes[8] = (bytes[8] & 0x3F) | 0x80
+        return UUID(uuid: (bytes[0], bytes[1], bytes[2], bytes[3], bytes[4], bytes[5], bytes[6], bytes[7],
+                          bytes[8], bytes[9], bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15]))
+    }
 
     /// "Auftragskonto" – account the booking belongs to (own IBAN)
     var accountNumber: String

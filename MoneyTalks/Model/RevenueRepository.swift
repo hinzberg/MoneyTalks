@@ -25,12 +25,24 @@ final class RevenueRepository {
         }
     }
 
-    func add(_ revenue: Revenue) {
+    /// Adds the revenue unless another one with the same id is already stored.
+    /// - Returns: true if the revenue was added, false if it was skipped as a duplicate.
+    func add(_ revenue: Revenue) -> Bool {
+        guard !revenues.contains(where: { $0.id == revenue.id }) else { return false }
         revenues.append(revenue)
+        return true
     }
 
-    func add(contentsOf newRevenues: [Revenue]) {
-        revenues.append(contentsOf: newRevenues)
+    /// Adds all revenues that are not stored yet, duplicates within the batch are skipped as well.
+    /// - Returns: the number of added revenues.
+    func add(contentsOf newRevenues: [Revenue]) -> Int {
+        var addedCount = 0
+        for revenue in newRevenues {
+            if add(revenue) {
+                addedCount += 1
+            }
+        }
+        return addedCount
     }
 
     func remove(_ revenue: Revenue) {

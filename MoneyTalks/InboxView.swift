@@ -62,6 +62,13 @@ struct InboxView: View {
         } message: {
             Text(importCoordinator.errorMessage ?? "")
         }
+        .alert("Items Skipped",
+               isPresented: Binding(get: { importCoordinator.skippedItemsMessage != nil },
+                                    set: { if !$0 { importCoordinator.skippedItemsMessage = nil } })) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(importCoordinator.skippedItemsMessage ?? "")
+        }
     }
 
     @ViewBuilder
@@ -82,8 +89,8 @@ struct InboxView: View {
     }
 
     private func clearSelectionIfFilteredOut() {
-        guard let selectedRevenueID, selectedRevenue == nil else { return }
-        self.selectedRevenueID = nil
+        guard selectedRevenueID != nil, selectedRevenue == nil else { return }
+        selectedRevenueID = nil
     }
 
     private func importFiles(_ result: Result<[URL], Error>) {
