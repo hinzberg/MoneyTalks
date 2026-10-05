@@ -15,7 +15,7 @@ struct MoneyTalksApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            NavigationManagerView()
                 .environment(repository)
                 .environment(importCoordinator)
         }

@@ -1,14 +1,11 @@
-//
 //  ContentView.swift
 //  MoneyTalks
-//
 //  Created by Holger Hinzberg on 25.09.26.
-//
 
 import SwiftUI
 import UniformTypeIdentifiers
 
-struct ContentView: View {
+struct InboxView: View {
 
     @Environment(RevenueRepository.self) private var repository
     @Environment(CSVImportCoordinator.self) private var importCoordinator
@@ -112,7 +109,7 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView()
+    InboxView()
         .environment(RevenueRepository())
         .environment(CSVImportCoordinator())
 }
