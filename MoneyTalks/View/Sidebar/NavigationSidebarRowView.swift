@@ -1,9 +1,6 @@
-//
 //  NavigationSidebarRowView.swift
 //  MoneyTalks
-//
 //  Created by Holger Hinzberg on 05.10.26.
-//
 
 import SwiftUI
 
