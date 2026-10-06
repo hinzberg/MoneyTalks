@@ -49,6 +49,19 @@ final class WalletRepository {
         return addedCount
     }
 
+    /// Copies the values of the given wallet onto the stored wallet with the same id.
+    /// - Returns: true if a wallet with that id was found and updated.
+    @discardableResult
+    func update(_ wallet: Wallet) -> Bool {
+        guard let storedWallet = wallets.first(where: { $0.id == wallet.id }) else { return false }
+        storedWallet.name = wallet.name
+        storedWallet.imageName = wallet.imageName
+        storedWallet.colorHex = wallet.colorHex
+        storedWallet.isIncomming = wallet.isIncomming
+        save()
+        return true
+    }
+
     func remove(_ wallet: Wallet) {
         remove(id: wallet.id)
     }

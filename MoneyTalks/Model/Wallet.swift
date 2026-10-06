@@ -20,8 +20,8 @@ final class Wallet: Hashable {
         set { colorHex = newValue.toHex() ?? "#FF0000" }
     }
 
-    init(name: String, imageName: String, isIncomming: Bool, color : Color = Color.red) {
-        self.id = UUID()
+    init(id: UUID = UUID(), name: String, imageName: String, isIncomming: Bool, color : Color = Color.red) {
+        self.id = id
         self.name = name
         self.imageName = imageName
         self.colorHex = color.toHex() ?? "#FF0000"
