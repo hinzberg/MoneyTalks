@@ -5,6 +5,7 @@
 //  Created by Holger Hinzberg on 05.10.26.
 //
 
+import AppKit
 import SwiftData
 import SwiftUI
 
@@ -26,9 +27,11 @@ struct WalletsView: View {
                     ForEach(repository.wallets) { wallet in
                         WalletRowView(wallet: wallet)
                             .tag(wallet.id)
-                            .simultaneousGesture(TapGesture(count: 2).onEnded {
-                                beginEditing(wallet)
-                            })
+                            .overlay {
+                                DoubleClickDetector {
+                                    beginEditing(wallet)
+                                }
+                            }
                             .contextMenu {
                                 Button("Edit") {
                                     beginEditing(wallet)
@@ -125,28 +128,7 @@ private struct WalletEditorTarget: Identifiable {
     }
 }
 
-private struct WalletRowView: View {
 
-    let wallet: Wallet
-
-    var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: wallet.imageName)
-                .font(.title3)
-                .foregroundStyle(.white)
-                .frame(width: 36, height: 36)
-                .background(wallet.color, in: Circle())
-            VStack(alignment: .leading, spacing: 2) {
-                Text(wallet.name)
-                    .font(.title3)
-                    .lineLimit(1)
-                Text(wallet.isIncomming ? "Incoming" : "Outgoing")
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 12)
-        }
-    }
-}
 
 #Preview {
     let container = try! ModelContainer(for: Revenue.self, Wallet.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
