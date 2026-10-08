@@ -15,9 +15,16 @@ struct RevenueDetailView: View {
     @Environment(RevenueRepository.self) private var repository
     @Environment(WalletRepository.self) private var walletRepository
 
+    @State private var isClassificationExpanded = true
+    @State private var isBookingExpanded = true
+    @State private var isCounterpartyExpanded = true
+    @State private var isAmountExpanded = true
+    @State private var isSEPAExpanded = true
+    @State private var isNoteExpanded = true
+
     var body: some View {
         Form {
-            Section("Classification") {
+            DisclosureGroup("Classification", isExpanded: $isClassificationExpanded) {
                 LabeledContent("Category") { text(revenue.category) }
                 Picker("Wallet", selection: walletSelection) {
                     Label("No Wallet", systemImage: "minus.circle")
@@ -41,7 +48,7 @@ struct RevenueDetailView: View {
                 }
             }
 
-            Section("Booking") {
+            DisclosureGroup("Booking", isExpanded: $isBookingExpanded) {
                 LabeledContent("Account Number") { text(revenue.accountNumber) }
                 LabeledContent("Booking Date") { date(revenue.bookingDate) }
                 LabeledContent("Value Date") { date(revenue.valueDate) }
@@ -49,24 +56,24 @@ struct RevenueDetailView: View {
                 LabeledContent("Info") { text(revenue.info) }
                 LabeledContent("Purpose") { text(revenue.purpose) }
             }
-            Section("Counterparty") {
+            DisclosureGroup("Counterparty", isExpanded: $isCounterpartyExpanded) {
                 LabeledContent("Beneficiary or Payer") { text(revenue.beneficiaryOrPayer) }
                 LabeledContent("IBAN") { text(revenue.iban) }
                 LabeledContent("BIC") { text(revenue.bic) }
             }
-            Section("Amount") {
+            DisclosureGroup("Amount", isExpanded: $isAmountExpanded) {
                 LabeledContent("Amount") { amount(revenue.amount) }
                 LabeledContent("Currency") { text(revenue.currency) }
                 LabeledContent("Original Amount") { amount(revenue.originalDirectDebitAmount) }
                 LabeledContent("Return Costs") { amount(revenue.directDebitReturnCosts) }
             }
-            Section("SEPA") {
+            DisclosureGroup("SEPA", isExpanded: $isSEPAExpanded) {
                 LabeledContent("Creditor ID") { text(revenue.creditorIdentifier) }
                 LabeledContent("Mandate Reference") { text(revenue.mandateReference) }
                 LabeledContent("End-to-End Reference") { text(revenue.endToEndReference) }
                 LabeledContent("Collector Reference") { text(revenue.collectorReference) }
             }
-            Section("Note") {
+            DisclosureGroup("Note", isExpanded: $isNoteExpanded) {
                 TextField("Add a note…", text: noteSelection, axis: .vertical)
                     .lineLimit(4...12)
             }
