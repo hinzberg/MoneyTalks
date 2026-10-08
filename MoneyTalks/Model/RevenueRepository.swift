@@ -62,9 +62,28 @@ final class RevenueRepository {
         return addedCount
     }
 
+    /// Stores the id of the given wallet, or clears the assignment when nil.
+    /// Clearing the wallet also switches off the confirmation, because a
+    /// revenue cannot be confirmed into a wallet that is not selected.
+    func setWallet(_ walletID: Wallet.ID?, for revenue: Revenue) {
+        let newValue = walletID?.uuidString ?? ""
+        guard revenue.wallet != newValue else { return }
+        revenue.wallet = newValue
+        if newValue.isEmpty && revenue.walletConfirmed {
+            revenue.walletConfirmed = false
+        }
+        save()
+    }
+
     func setWalletConfirmed(_ isConfirmed: Bool, for revenue: Revenue) {
         guard revenue.walletConfirmed != isConfirmed else { return }
         revenue.walletConfirmed = isConfirmed
+        save()
+    }
+
+    func setNote(_ note: String, for revenue: Revenue) {
+        guard revenue.note != note else { return }
+        revenue.note = note
         save()
     }
 

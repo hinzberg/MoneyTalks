@@ -121,8 +121,9 @@ struct InboxView: View {
 }
 
 #Preview {
-    let container = try! ModelContainer(for: Revenue.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+    let container = try! ModelContainer(for: Revenue.self, Wallet.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
     return InboxView()
         .environment(RevenueRepository(modelContext: container.mainContext))
+        .environment(WalletRepository(modelContext: container.mainContext))
         .environment(CSVImportCoordinator())
 }
