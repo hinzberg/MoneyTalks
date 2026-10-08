@@ -28,9 +28,17 @@ struct RevenueDetailView: View {
                     }
                 }
                 .pickerStyle(.menu)
-                Toggle("Wallet Confirmed", isOn: walletConfirmedSelection)
+                
+                if revenue.walletConfirmed {
+                    Label("Wallet Confirmed", systemImage: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                } else {
+                    Button("Confirm Wallet") {
+                        repository.setWalletConfirmed(true, for: revenue)
+                    }
                     .disabled(selectedWallet == nil)
                     .help(selectedWallet == nil ? "Select a wallet to confirm this revenue" : "")
+                }
             }
 
             Section("Booking") {
@@ -79,13 +87,6 @@ struct RevenueDetailView: View {
         Binding(
             get: { selectedWallet?.id.uuidString ?? "" },
             set: { repository.setWallet(UUID(uuidString: $0), for: revenue) }
-        )
-    }
-
-    private var walletConfirmedSelection: Binding<Bool> {
-        Binding(
-            get: { revenue.walletConfirmed },
-            set: { repository.setWalletConfirmed($0, for: revenue) }
         )
     }
 
