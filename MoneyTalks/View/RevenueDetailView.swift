@@ -17,15 +17,19 @@ struct RevenueDetailView: View {
 
     @State private var isClassificationExpanded = true
     @State private var isBookingExpanded = true
-    @State private var isCounterpartyExpanded = true
-    @State private var isAmountExpanded = true
-    @State private var isSEPAExpanded = true
-    @State private var isNoteExpanded = true
+    @State private var isCounterpartyExpanded = false
+    @State private var isAmountExpanded = false
+    @State private var isSEPAExpanded = false
+    @State private var isNoteExpanded = false
 
     var body: some View {
-        Form {
+        
+        VStack {
+       
             DisclosureGroup("Classification", isExpanded: $isClassificationExpanded) {
+                
                 LabeledContent("Category") { text(revenue.category) }
+                                
                 Picker("Wallet", selection: walletSelection) {
                     Label("No Wallet", systemImage: "minus.circle")
                         .tag("")
@@ -47,7 +51,9 @@ struct RevenueDetailView: View {
                     .help(selectedWallet == nil ? "Select a wallet to confirm this revenue" : "")
                 }
             }
-
+            .labeledContentStyle(.inverted)
+            .disclosureGroupStyle(CustomDisclosureStyle())
+        
             DisclosureGroup("Booking", isExpanded: $isBookingExpanded) {
                 LabeledContent("Account Number") { text(revenue.accountNumber) }
                 LabeledContent("Booking Date") { date(revenue.bookingDate) }
@@ -56,68 +62,87 @@ struct RevenueDetailView: View {
                 LabeledContent("Info") { text(revenue.info) }
                 LabeledContent("Purpose") { text(revenue.purpose) }
             }
+            .labeledContentStyle(.inverted)
+            .disclosureGroupStyle(CustomDisclosureStyle())
+            
             DisclosureGroup("Counterparty", isExpanded: $isCounterpartyExpanded) {
                 LabeledContent("Beneficiary or Payer") { text(revenue.beneficiaryOrPayer) }
                 LabeledContent("IBAN") { text(revenue.iban) }
                 LabeledContent("BIC") { text(revenue.bic) }
             }
+            .labeledContentStyle(.inverted)
+            .disclosureGroupStyle(CustomDisclosureStyle())
+
             DisclosureGroup("Amount", isExpanded: $isAmountExpanded) {
                 LabeledContent("Amount") { amount(revenue.amount) }
                 LabeledContent("Currency") { text(revenue.currency) }
                 LabeledContent("Original Amount") { amount(revenue.originalDirectDebitAmount) }
                 LabeledContent("Return Costs") { amount(revenue.directDebitReturnCosts) }
             }
+            .labeledContentStyle(.inverted)
+            .disclosureGroupStyle(CustomDisclosureStyle())
+            
             DisclosureGroup("SEPA", isExpanded: $isSEPAExpanded) {
                 LabeledContent("Creditor ID") { text(revenue.creditorIdentifier) }
                 LabeledContent("Mandate Reference") { text(revenue.mandateReference) }
                 LabeledContent("End-to-End Reference") { text(revenue.endToEndReference) }
                 LabeledContent("Collector Reference") { text(revenue.collectorReference) }
             }
+            .labeledContentStyle(.inverted)
+            .disclosureGroupStyle(CustomDisclosureStyle())
+
+            
             DisclosureGroup("Note", isExpanded: $isNoteExpanded) {
                 TextField("Add a note…", text: noteSelection, axis: .vertical)
                     .lineLimit(4...12)
             }
-
+            .labeledContentStyle(.inverted)
+            .disclosureGroupStyle(CustomDisclosureStyle())
+            
+            Spacer()
         }
-        .formStyle(.grouped)
-        .textSelection(.enabled)
+        .padding(EdgeInsets(top: 2, leading: 6, bottom: 0, trailing: 6))
     }
 
     /// The wallet stored on the revenue, resolved to a wallet that still exists.
     /// A deleted wallet resolves to no selection.
-    private var selectedWallet: Wallet? {
+    var selectedWallet: Wallet? {
         guard !revenue.wallet.isEmpty else { return nil }
         return walletRepository.wallets.first { $0.id.uuidString == revenue.wallet }
     }
 
-    private var walletSelection: Binding<String> {
+    var walletSelection: Binding<String> {
         Binding(
             get: { selectedWallet?.id.uuidString ?? "" },
             set: { repository.setWallet(UUID(uuidString: $0), for: revenue) }
         )
     }
 
-    private var noteSelection: Binding<String> {
+    var noteSelection: Binding<String> {
         Binding(
             get: { revenue.note },
             set: { repository.setNote($0, for: revenue) }
         )
     }
 
-    private func text(_ value: String?) -> Text {
+    func text(_ value: String?) -> Text {
         guard let value, !value.isEmpty else { return Text("—") }
         return Text(value)
     }
 
-    private func date(_ value: Date) -> Text {
+    func date(_ value: Date) -> Text {
         Text(value, format: .dateTime.day().month(.twoDigits).year())
     }
 
-    private func amount(_ value: Decimal?) -> Text {
+    func amount(_ value: Decimal?) -> Text {
         guard let value else { return Text("—") }
         return Text(value, format: .currency(code: revenue.currency))
     }
 }
+
+
+
+
 
 private struct WalletLabel: View {
 

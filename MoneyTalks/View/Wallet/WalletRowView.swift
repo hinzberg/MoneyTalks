@@ -15,11 +15,12 @@ public struct WalletRowView: View {
                 .foregroundStyle(.white)
                 .frame(width: 36, height: 36)
                 .background(wallet.color, in: Circle())
-            VStack(alignment: .leading, spacing: 2) {
+            
+            VStack(alignment: .leading, spacing: 6) {
                 Text(wallet.name)
-                    .font(.title3)
-                    .lineLimit(1)
+                    .titleStyle()
                 Text(wallet.isIncomming ? "Incoming" : "Outgoing")
+                    .subTitleStyle()
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 12)
