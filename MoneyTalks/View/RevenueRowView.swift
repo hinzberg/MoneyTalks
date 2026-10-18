@@ -13,12 +13,10 @@ public struct RevenueRowView: View {
     let revenue: Revenue
 
     public var body: some View {
-        HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .firstTextBaseline, spacing: 8) {
             VStack(alignment: .leading, spacing: 6) {
-
                 Text(revenue.beneficiaryOrPayer.isEmpty ? revenue.purpose : revenue.beneficiaryOrPayer)
                     .titleStyle()
-                
                 HStack(spacing: 4) {
                     Text(revenue.bookingDate, format: .dateTime.day().month(.twoDigits).year())
                         .subTitleStyle()
@@ -30,9 +28,14 @@ public struct RevenueRowView: View {
                 .foregroundStyle(.secondary)
             }
             Spacer(minLength: 12)
-            Text(revenue.amount, format: .currency(code: revenue.currency))
-                .foregroundStyle(revenue.amount < 0 ? .red : .green)
-                .titleStyle()
+            VStack(alignment: .trailing, spacing: 4) {
+                Text(revenue.amount, format: .currency(code: revenue.currency))
+                    .foregroundStyle(revenue.amount < 0 ? .red : .green)
+                    .titleStyle()
+                if let wallet = revenue.wallet {
+                    WalletPillView(wallet: wallet)
+                }
+            }
         }
         .padding(EdgeInsets(top: 4, leading: 0, bottom: 4, trailing: 0))
     }

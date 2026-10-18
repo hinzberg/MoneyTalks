@@ -8,11 +8,23 @@
 import SwiftUI
 
 struct WalletPillView: View {
+
+    let wallet: Wallet
+
     var body: some View {
-        Text(/*@START_MENU_TOKEN@*/"Hello, World!"/*@END_MENU_TOKEN@*/)
+        Text(wallet.name)
+            .subTitleStyle()
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 6)
+            .padding(.vertical, 1)
+            .background(
+                RoundedRectangle(cornerRadius: 4, style: .continuous)
+                    .stroke(wallet.color, lineWidth: 1)
+            )
     }
 }
 
 #Preview {
-    WalletPillView()
+    let wallet = Wallet(name: "Girokonto", imageName: "banknote.fill", isIncomming: true, color: .blue)
+    return WalletPillView(wallet: wallet)
 }
