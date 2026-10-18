@@ -6,6 +6,10 @@
 	objectVersion = 110;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3F00992530849FA60009A3F8 /* README.md in Resources */ = {isa = PBXBuildFile; fileRef = 3F00992430849FA60009A3F8 /* README.md */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3FBE102E3066CF61007FB0CC /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3F00992430849FA60009A3F8 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
 		3FBE10203066CF60007FB0CC /* MoneyTalks.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MoneyTalks.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FBE102D3066CF61007FB0CC /* MoneyTalksTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoneyTalksTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FBE10373066CF61007FB0CC /* MoneyTalksUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MoneyTalksUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -69,6 +74,7 @@
 		3FBE10173066CF60007FB0CC = {
 			isa = PBXGroup;
 			children = (
+				3F00992430849FA60009A3F8 /* README.md */,
 				3FBE10223066CF60007FB0CC /* MoneyTalks */,
 				3FBE10303066CF61007FB0CC /* MoneyTalksTests */,
 				3FBE103A3066CF61007FB0CC /* MoneyTalksUITests */,
@@ -197,6 +203,7 @@
 		3FBE101E3066CF60007FB0CC /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
+				3F00992530849FA60009A3F8 /* README.md in Resources */,
 			);
 		};
 		3FBE102B3066CF61007FB0CC /* Resources */ = {

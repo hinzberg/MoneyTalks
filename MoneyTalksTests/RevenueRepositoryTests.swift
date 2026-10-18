@@ -144,6 +144,52 @@ struct RevenueRepositoryTests {
         #expect(container.mainContext.hasChanges == false)
     }
 
+    // MARK: - clearWalletReferences
+
+    @Test func clearWalletReferencesRevokesOnlyMatchingWallets() throws {
+        let matchingWalletID = UUID()
+        let otherWalletID = UUID()
+        let matching = makeRevenue(purpose: "Zuordnung A", wallet: matchingWalletID.uuidString, walletConfirmed: true)
+        let other = makeRevenue(purpose: "Zuordnung B", wallet: otherWalletID.uuidString, walletConfirmed: true)
+        let unassigned = makeRevenue(purpose: "Ohne Wallet", walletConfirmed: true)
+        repository.add(contentsOf: [matching, other, unassigned])
+
+        repository.clearWalletReferences(matching: [matchingWalletID])
+
+        #expect(matching.wallet.isEmpty)
+        #expect(!matching.walletConfirmed)
+        #expect(other.wallet == otherWalletID.uuidString)
+        #expect(other.walletConfirmed)
+        #expect(unassigned.wallet.isEmpty)
+        #expect(unassigned.walletConfirmed)
+    }
+
+    @Test func clearWalletReferencesWithoutMatchChangesNothing() throws {
+        let revenue = makeRevenue(wallet: UUID().uuidString, walletConfirmed: true)
+        repository.add(revenue)
+
+        repository.clearWalletReferences(matching: [UUID()])
+
+        #expect(!revenue.wallet.isEmpty)
+        #expect(revenue.walletConfirmed)
+        #expect(container.mainContext.hasChanges == false)
+    }
+
+    @Test func clearAllWalletReferencesClearsEveryAssignment() throws {
+        let confirmed = makeRevenue(purpose: "Bestätigt", wallet: UUID().uuidString, walletConfirmed: true)
+        let unconfirmed = makeRevenue(purpose: "Offen", wallet: UUID().uuidString)
+        let unassigned = makeRevenue(purpose: "Ohne Wallet")
+        repository.add(contentsOf: [confirmed, unconfirmed, unassigned])
+
+        repository.clearAllWalletReferences()
+
+        #expect(confirmed.wallet.isEmpty)
+        #expect(!confirmed.walletConfirmed)
+        #expect(unconfirmed.wallet.isEmpty)
+        #expect(unassigned.wallet.isEmpty)
+        #expect(container.mainContext.hasChanges == false)
+    }
+
     // MARK: - Removing
 
     @Test func removeDeletesRevenue() throws {

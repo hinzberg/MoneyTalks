@@ -12,6 +12,7 @@ import SwiftUI
 struct WalletsView: View {
 
     @Environment(WalletRepository.self) private var repository
+    @Environment(RevenueRepository.self) private var revenueRepository
 
     @State private var selectedWalletID: Wallet.ID?
     @State private var editorTarget: WalletEditorTarget?
@@ -41,7 +42,7 @@ struct WalletsView: View {
                                 }
                             }
                     }
-                    .onDelete(perform: repository.remove(atOffsets:))
+                    .onDelete(perform: deleteWallets(atOffsets:))
                 }
             }
         }
@@ -105,9 +106,19 @@ struct WalletsView: View {
 
     private func delete(_ wallet: Wallet) {
         repository.remove(wallet)
+        revenueRepository.clearWalletReferences(matching: [wallet.id])
         if selectedWalletID == wallet.id {
             selectedWalletID = nil
         }
+    }
+
+    private func deleteWallets(atOffsets offsets: IndexSet) {
+        let wallets = repository.wallets
+        let deletedIDs = offsets
+            .filter { wallets.indices.contains($0) }
+            .map { wallets[$0].id }
+        repository.remove(atOffsets: offsets)
+        revenueRepository.clearWalletReferences(matching: deletedIDs)
     }
 
     private func deleteSelectedWallet() {
@@ -138,4 +149,5 @@ private struct WalletEditorTarget: Identifiable {
     return WalletsView()
         .modelContainer(container)
         .environment(repository)
+        .environment(RevenueRepository(modelContext: container.mainContext))
 }

@@ -87,6 +87,39 @@ final class RevenueRepository {
         save()
     }
 
+    /// Clears the wallet assignment of every revenue that references one of the
+    /// given wallets and revokes the confirmation, because a revenue cannot be
+    /// confirmed into a wallet that no longer exists.
+    func clearWalletReferences(matching walletIDs: [UUID]) {
+        let idStrings = Set(walletIDs.map(\.uuidString))
+        var changed = false
+        for revenue in revenues where idStrings.contains(revenue.wallet) {
+            revenue.wallet = ""
+            if revenue.walletConfirmed {
+                revenue.walletConfirmed = false
+            }
+            changed = true
+        }
+        if changed {
+            save()
+        }
+    }
+
+    /// Clears the wallet assignment of every revenue and revokes the confirmation.
+    func clearAllWalletReferences() {
+        var changed = false
+        for revenue in revenues where !revenue.wallet.isEmpty {
+            revenue.wallet = ""
+            if revenue.walletConfirmed {
+                revenue.walletConfirmed = false
+            }
+            changed = true
+        }
+        if changed {
+            save()
+        }
+    }
+
     func remove(_ revenue: Revenue) {
         remove(id: revenue.id)
     }
