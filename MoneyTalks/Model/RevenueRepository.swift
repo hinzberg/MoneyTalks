@@ -13,7 +13,7 @@ import SwiftData
 @MainActor
 final class RevenueRepository {
 
-    private let modelContext: ModelContext
+    let modelContext: ModelContext
 
     private(set) var revenues: [Revenue] = []
     private(set) var lastSaveErrorMessage: String?

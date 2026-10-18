@@ -13,6 +13,7 @@ struct InboxView: View {
 
     @State private var selectedRevenueID: Revenue.ID?
     @State private var isInspectorPresented = true
+    @State private var isConfirmingConfirmAll = false
 
     var body: some View {
         @Bindable var importCoordinator = importCoordinator
@@ -42,10 +43,19 @@ struct InboxView: View {
         .onChange(of: repository.searchText) {
             clearSelectionIfFilteredOut()
         }
-        .inspector(isPresented: $isInspectorPresented) {
+        .inspector(isPresented: Binding(get: { isInspectorPresented }, set: { isInspectorPresented = $0 })) {
             inspector
         }
         .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    isConfirmingConfirmAll = true
+                } label: {
+                    Label("Confirm Wallets", systemImage: "checkmark")
+                }
+                .help("Confirm all revenues with an assigned wallet")
+                .disabled(unconfirmedWithWalletCount == 0)
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     isInspectorPresented.toggle()
@@ -73,6 +83,15 @@ struct InboxView: View {
             Button("OK", role: .cancel) {}
         } message: {
             Text(importCoordinator.skippedItemsMessage ?? "")
+        }
+        .alert("Confirm All Wallets?",
+               isPresented: $isConfirmingConfirmAll) {
+            Button("Confirm", role: .destructive) {
+                confirmAllUnconfirmedWithWallet()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This marks \(unconfirmedWithWalletCount) revenue(s) with an assigned wallet as confirmed.")
         }
     }
 
@@ -112,6 +131,21 @@ struct InboxView: View {
         let inboxRevenues = repository.filteredInboxRevenues
         for offset in offsets where inboxRevenues.indices.contains(offset) {
             repository.remove(id: inboxRevenues[offset].id)
+        }
+    }
+
+    private var unconfirmedWithWalletCount: Int {
+        repository.revenues.filter { $0.wallet != nil && !$0.walletConfirmed }.count
+    }
+
+    private func confirmAllUnconfirmedWithWallet() {
+        var changed = false
+        for revenue in repository.revenues where revenue.wallet != nil && !revenue.walletConfirmed {
+            revenue.walletConfirmed = true
+            changed = true
+        }
+        if changed {
+            try? repository.modelContext.save()
         }
     }
 
