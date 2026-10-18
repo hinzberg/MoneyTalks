@@ -7,6 +7,7 @@
 
 import Foundation
 import SwiftData
+import SwiftUI
 import Testing
 @testable import MoneyTalks
 
@@ -18,7 +19,7 @@ struct RevenueRepositoryTests {
 
     init() throws {
         container = try ModelContainer(
-            for: Revenue.self,
+            for: Revenue.self, Wallet.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         repository = RevenueRepository(modelContext: container.mainContext)
     }
@@ -67,52 +68,52 @@ struct RevenueRepositoryTests {
 
     // MARK: - setWallet
 
-    @Test func setWalletStoresWalletIDAsString() throws {
+    @Test func setWalletAssignsWallet() throws {
         let revenue = makeRevenue()
         repository.add(revenue)
-        let walletID = UUID()
+        let wallet = insertWallet()
 
-        repository.setWallet(walletID, for: revenue)
+        repository.setWallet(wallet, for: revenue)
 
-        #expect(revenue.wallet == walletID.uuidString)
+        #expect(revenue.wallet?.id == wallet.id)
         #expect(container.mainContext.hasChanges == false)
     }
 
     @Test func setWalletWithNilClearsWalletAndRevokesConfirmation() throws {
         let revenue = makeRevenue()
         repository.add(revenue)
-        repository.setWallet(UUID(), for: revenue)
+        repository.setWallet(insertWallet(), for: revenue)
         repository.setWalletConfirmed(true, for: revenue)
 
         repository.setWallet(nil, for: revenue)
 
-        #expect(revenue.wallet.isEmpty)
+        #expect(revenue.wallet == nil)
         #expect(!revenue.walletConfirmed)
     }
 
-    @Test func setWalletWithSameIDKeepsConfirmation() throws {
+    @Test func setWalletWithSameWalletKeepsConfirmation() throws {
         let revenue = makeRevenue()
         repository.add(revenue)
-        let walletID = UUID()
-        repository.setWallet(walletID, for: revenue)
+        let wallet = insertWallet()
+        repository.setWallet(wallet, for: revenue)
         repository.setWalletConfirmed(true, for: revenue)
 
-        repository.setWallet(walletID, for: revenue)
+        repository.setWallet(wallet, for: revenue)
 
-        #expect(revenue.wallet == walletID.uuidString)
+        #expect(revenue.wallet?.id == wallet.id)
         #expect(revenue.walletConfirmed)
     }
 
     @Test func setWalletToDifferentWalletKeepsConfirmation() throws {
         let revenue = makeRevenue()
         repository.add(revenue)
-        repository.setWallet(UUID(), for: revenue)
+        repository.setWallet(insertWallet(), for: revenue)
         repository.setWalletConfirmed(true, for: revenue)
-        let newWalletID = UUID()
+        let newWallet = insertWallet(named: "Kreditkarte")
 
-        repository.setWallet(newWalletID, for: revenue)
+        repository.setWallet(newWallet, for: revenue)
 
-        #expect(revenue.wallet == newWalletID.uuidString)
+        #expect(revenue.wallet?.id == newWallet.id)
         #expect(revenue.walletConfirmed)
     }
 
@@ -144,49 +145,47 @@ struct RevenueRepositoryTests {
         #expect(container.mainContext.hasChanges == false)
     }
 
-    // MARK: - clearWalletReferences
+    // MARK: - clearOrphanedConfirmations
 
-    @Test func clearWalletReferencesRevokesOnlyMatchingWallets() throws {
-        let matchingWalletID = UUID()
-        let otherWalletID = UUID()
-        let matching = makeRevenue(purpose: "Zuordnung A", wallet: matchingWalletID.uuidString, walletConfirmed: true)
-        let other = makeRevenue(purpose: "Zuordnung B", wallet: otherWalletID.uuidString, walletConfirmed: true)
-        let unassigned = makeRevenue(purpose: "Ohne Wallet", walletConfirmed: true)
-        repository.add(contentsOf: [matching, other, unassigned])
+    @Test func clearOrphanedConfirmationsUnconfirmsRevenuesWithoutWallet() throws {
+        let wallet = insertWallet()
+        let confirmedWithWallet = makeRevenue(purpose: "Mit Wallet", walletConfirmed: true)
+        let unconfirmed = makeRevenue(purpose: "Offen")
+        repository.add(contentsOf: [confirmedWithWallet, unconfirmed])
+        repository.setWallet(wallet, for: confirmedWithWallet)
+        repository.setWalletConfirmed(true, for: confirmedWithWallet)
 
-        repository.clearWalletReferences(matching: [matchingWalletID])
+        let walletRepository = WalletRepository(modelContext: container.mainContext)
+        walletRepository.removeAll()
+        #expect(confirmedWithWallet.wallet == nil)
+        #expect(confirmedWithWallet.walletConfirmed)
 
-        #expect(matching.wallet.isEmpty)
-        #expect(!matching.walletConfirmed)
-        #expect(other.wallet == otherWalletID.uuidString)
-        #expect(other.walletConfirmed)
-        #expect(unassigned.wallet.isEmpty)
-        #expect(unassigned.walletConfirmed)
+        repository.clearOrphanedConfirmations()
+
+        #expect(!confirmedWithWallet.walletConfirmed)
+        #expect(!unconfirmed.walletConfirmed)
     }
 
-    @Test func clearWalletReferencesWithoutMatchChangesNothing() throws {
-        let revenue = makeRevenue(wallet: UUID().uuidString, walletConfirmed: true)
+    @Test func clearOrphanedConfirmationsKeepsConfirmedRevenuesWithWallet() throws {
+        let revenue = makeRevenue(walletConfirmed: true)
         repository.add(revenue)
+        repository.setWallet(insertWallet(), for: revenue)
+        repository.setWalletConfirmed(true, for: revenue)
 
-        repository.clearWalletReferences(matching: [UUID()])
+        repository.clearOrphanedConfirmations()
 
-        #expect(!revenue.wallet.isEmpty)
+        #expect(revenue.wallet != nil)
         #expect(revenue.walletConfirmed)
         #expect(container.mainContext.hasChanges == false)
     }
 
-    @Test func clearAllWalletReferencesClearsEveryAssignment() throws {
-        let confirmed = makeRevenue(purpose: "Bestätigt", wallet: UUID().uuidString, walletConfirmed: true)
-        let unconfirmed = makeRevenue(purpose: "Offen", wallet: UUID().uuidString)
-        let unassigned = makeRevenue(purpose: "Ohne Wallet")
-        repository.add(contentsOf: [confirmed, unconfirmed, unassigned])
+    @Test func clearOrphanedConfirmationsIsNoOpWithoutOrphans() throws {
+        let revenue = makeRevenue()
+        repository.add(revenue)
 
-        repository.clearAllWalletReferences()
+        repository.clearOrphanedConfirmations()
 
-        #expect(confirmed.wallet.isEmpty)
-        #expect(!confirmed.walletConfirmed)
-        #expect(unconfirmed.wallet.isEmpty)
-        #expect(unassigned.wallet.isEmpty)
+        #expect(!revenue.walletConfirmed)
         #expect(container.mainContext.hasChanges == false)
     }
 
@@ -343,6 +342,13 @@ struct RevenueRepositoryTests {
 
     // MARK: - Helpers
 
+    @discardableResult
+    private func insertWallet(named name: String = "Girokonto") -> Wallet {
+        let wallet = Wallet(name: name, imageName: "banknote.fill", isIncomming: true, color: .blue)
+        container.mainContext.insert(wallet)
+        return wallet
+    }
+
     private func makeRevenue(
         bookingDate: Date = Date(timeIntervalSince1970: 1_790_745_600),
         bookingText: String = "Buchungstext",
@@ -352,7 +358,6 @@ struct RevenueRepositoryTests {
         endToEndReference: String? = nil,
         category: String? = nil,
         note: String = "",
-        wallet: String = "",
         walletConfirmed: Bool = false
     ) -> Revenue {
         Revenue(
@@ -375,7 +380,6 @@ struct RevenueRepositoryTests {
             info: "Info",
             category: category,
             note: note,
-            wallet: wallet,
             walletConfirmed: walletConfirmed)
     }
 }

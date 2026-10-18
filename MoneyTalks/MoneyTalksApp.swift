@@ -46,11 +46,32 @@ struct MoneyTalksApp: App {
         }
     }
 
+    /// Bump this whenever the model schema changes incompatibly. The on-disk
+    /// store is then deleted once, so the user starts fresh and re-imports
+    /// the CSV data.
+    private static let schemaVersion = 2
+
     private static func makeModelContainer() -> ModelContainer {
+        resetStoreIfSchemaChanged()
         do {
             return try ModelContainer(for: Revenue.self, Wallet.self)
         } catch {
             return try! ModelContainer(for: Revenue.self, Wallet.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         }
+    }
+
+    private static func resetStoreIfSchemaChanged() {
+        let defaults = UserDefaults.standard
+        guard defaults.integer(forKey: "schemaVersion") != schemaVersion else { return }
+        if let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first,
+           let files = try? FileManager.default.contentsOfDirectory(at: support, includingPropertiesForKeys: nil) {
+            for file in files
+            where file.lastPathComponent.hasSuffix(".store")
+                || file.lastPathComponent.hasSuffix(".store-wal")
+                || file.lastPathComponent.hasSuffix(".store-shm") {
+                try? FileManager.default.removeItem(at: file)
+            }
+        }
+        defaults.set(schemaVersion, forKey: "schemaVersion")
     }
 }

@@ -106,19 +106,15 @@ struct WalletsView: View {
 
     private func delete(_ wallet: Wallet) {
         repository.remove(wallet)
-        revenueRepository.clearWalletReferences(matching: [wallet.id])
+        revenueRepository.clearOrphanedConfirmations()
         if selectedWalletID == wallet.id {
             selectedWalletID = nil
         }
     }
 
     private func deleteWallets(atOffsets offsets: IndexSet) {
-        let wallets = repository.wallets
-        let deletedIDs = offsets
-            .filter { wallets.indices.contains($0) }
-            .map { wallets[$0].id }
         repository.remove(atOffsets: offsets)
-        revenueRepository.clearWalletReferences(matching: deletedIDs)
+        revenueRepository.clearOrphanedConfirmations()
     }
 
     private func deleteSelectedWallet() {

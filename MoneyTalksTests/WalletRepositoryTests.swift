@@ -19,7 +19,7 @@ struct WalletRepositoryTests {
 
     init() throws {
         container = try ModelContainer(
-            for: Wallet.self,
+            for: Revenue.self, Wallet.self,
             configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         repository = WalletRepository(modelContext: container.mainContext)
     }

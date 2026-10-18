@@ -62,14 +62,13 @@ final class RevenueRepository {
         return addedCount
     }
 
-    /// Stores the id of the given wallet, or clears the assignment when nil.
+    /// Assigns the given wallet, or clears the assignment when nil.
     /// Clearing the wallet also switches off the confirmation, because a
     /// revenue cannot be confirmed into a wallet that is not selected.
-    func setWallet(_ walletID: Wallet.ID?, for revenue: Revenue) {
-        let newValue = walletID?.uuidString ?? ""
-        guard revenue.wallet != newValue else { return }
-        revenue.wallet = newValue
-        if newValue.isEmpty && revenue.walletConfirmed {
+    func setWallet(_ wallet: Wallet?, for revenue: Revenue) {
+        guard revenue.wallet?.id != wallet?.id else { return }
+        revenue.wallet = wallet
+        if wallet == nil && revenue.walletConfirmed {
             revenue.walletConfirmed = false
         }
         save()
@@ -87,32 +86,13 @@ final class RevenueRepository {
         save()
     }
 
-    /// Clears the wallet assignment of every revenue that references one of the
-    /// given wallets and revokes the confirmation, because a revenue cannot be
-    /// confirmed into a wallet that no longer exists.
-    func clearWalletReferences(matching walletIDs: [UUID]) {
-        let idStrings = Set(walletIDs.map(\.uuidString))
+    /// Revokes the confirmation of every revenue that has no wallet assigned.
+    /// Call this after deleting wallets: the store unassigns them automatically,
+    /// but a confirmed revenue would otherwise stay hidden from the inbox.
+    func clearOrphanedConfirmations() {
         var changed = false
-        for revenue in revenues where idStrings.contains(revenue.wallet) {
-            revenue.wallet = ""
-            if revenue.walletConfirmed {
-                revenue.walletConfirmed = false
-            }
-            changed = true
-        }
-        if changed {
-            save()
-        }
-    }
-
-    /// Clears the wallet assignment of every revenue and revokes the confirmation.
-    func clearAllWalletReferences() {
-        var changed = false
-        for revenue in revenues where !revenue.wallet.isEmpty {
-            revenue.wallet = ""
-            if revenue.walletConfirmed {
-                revenue.walletConfirmed = false
-            }
+        for revenue in revenues where revenue.walletConfirmed && revenue.wallet == nil {
+            revenue.walletConfirmed = false
             changed = true
         }
         if changed {

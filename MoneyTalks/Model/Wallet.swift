@@ -15,6 +15,11 @@ final class Wallet: Hashable {
     var colorHex: String
     var isIncomming : Bool
 
+    /// All revenues assigned to this wallet. Deleting the wallet unassigns
+    /// them (delete rule .nullify on Revenue.wallet).
+    @Relationship(inverse: \Revenue.wallet)
+    var revenues: [Revenue] = []
+
     var color: Color {
         get { Color(hex: colorHex) ?? .red }
         set { colorHex = newValue.toHex() ?? "#FF0000" }

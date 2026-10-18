@@ -71,7 +71,10 @@ final class Revenue: Hashable {
 
     var note: String
 
-    var wallet: String
+    /// The wallet this revenue is assigned to. Deleting a wallet unassigns
+    /// its revenues; the assignment is separate from the confirmation below.
+    @Relationship(deleteRule: .nullify)
+    var wallet: Wallet?
 
     var walletConfirmed: Bool
 
@@ -94,7 +97,6 @@ final class Revenue: Hashable {
          info: String,
          category: String?,
          note: String = "",
-         wallet: String = "",
          walletConfirmed: Bool = false) {
         self.id = Self.stableUUID(from: Self.identifier(endToEndReference: endToEndReference,
                                                           bookingDate: bookingDate,
@@ -119,7 +121,6 @@ final class Revenue: Hashable {
         self.info = info
         self.category = category
         self.note = note
-        self.wallet = wallet
         self.walletConfirmed = walletConfirmed
     }
 

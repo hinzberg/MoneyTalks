@@ -50,7 +50,7 @@ struct SettingsView: View {
         .alert("Delete All Wallets?", isPresented: $isConfirmingDeleteWallets) {
             Button("Delete", role: .destructive) {
                 walletRepository.removeAll()
-                revenueRepository.clearAllWalletReferences()
+                revenueRepository.clearOrphanedConfirmations()
             }
             Button("Cancel", role: .cancel) {}
         } message: {

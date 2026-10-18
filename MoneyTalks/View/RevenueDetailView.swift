@@ -30,12 +30,15 @@ struct RevenueDetailView: View {
                 
                 LabeledContent("Category") { text(revenue.category) }
                                 
-                Picker("Wallet", selection: walletSelection) {
+                Picker("Wallet", selection: Binding(
+                    get: { revenue.wallet },
+                    set: { repository.setWallet($0, for: revenue) }
+                )) {
                     Label("No Wallet", systemImage: "minus.circle")
-                        .tag("")
+                        .tag(Optional<Wallet>.none)
                     ForEach(walletRepository.wallets) { wallet in
                         WalletLabel(wallet: wallet)
-                            .tag(wallet.id.uuidString)
+                            .tag(wallet as Wallet?)
                     }
                 }
                 .pickerStyle(.menu)
@@ -47,8 +50,8 @@ struct RevenueDetailView: View {
                     Button("Confirm Wallet") {
                         repository.setWalletConfirmed(true, for: revenue)
                     }
-                    .disabled(selectedWallet == nil)
-                    .help(selectedWallet == nil ? "Select a wallet to confirm this revenue" : "")
+                    .disabled(revenue.wallet == nil)
+                    .help(revenue.wallet == nil ? "Select a wallet to confirm this revenue" : "")
                 }
             }
             .labeledContentStyle(.inverted)
@@ -102,20 +105,6 @@ struct RevenueDetailView: View {
             Spacer()
         }
         .padding(EdgeInsets(top: 2, leading: 6, bottom: 0, trailing: 6))
-    }
-
-    /// The wallet stored on the revenue, resolved to a wallet that still exists.
-    /// A deleted wallet resolves to no selection.
-    var selectedWallet: Wallet? {
-        guard !revenue.wallet.isEmpty else { return nil }
-        return walletRepository.wallets.first { $0.id.uuidString == revenue.wallet }
-    }
-
-    var walletSelection: Binding<String> {
-        Binding(
-            get: { selectedWallet?.id.uuidString ?? "" },
-            set: { repository.setWallet(UUID(uuidString: $0), for: revenue) }
-        )
     }
 
     var noteSelection: Binding<String> {
@@ -181,8 +170,7 @@ private struct WalletLabel: View {
         currency: "EUR",
         info: "Umsatz vorgemerkt",
         category: nil,
-        note: "",
-        wallet: "")
+        note: "")
     let repository = RevenueRepository(modelContext: container.mainContext)
     repository.add(revenue)
     let walletRepository = WalletRepository(modelContext: container.mainContext)
