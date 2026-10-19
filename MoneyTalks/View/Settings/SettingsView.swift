@@ -12,12 +12,31 @@ struct SettingsView: View {
 
     @Environment(RevenueRepository.self) private var revenueRepository
     @Environment(WalletRepository.self) private var walletRepository
+    @Environment(BackupCoordinator.self) private var backupCoordinator
 
     @State private var isConfirmingDeleteRevenues = false
     @State private var isConfirmingDeleteWallets = false
 
     var body: some View {
         Form {
+            Section {
+                LabeledContent("Backup") {
+                    Button("Export Backup…") {
+                        backupCoordinator.prepareExport(walletRepository: walletRepository,
+                                                        revenueRepository: revenueRepository)
+                    }
+                    .disabled(revenueRepository.revenues.isEmpty && walletRepository.wallets.isEmpty)
+                }
+                LabeledContent("Restore") {
+                    Button("Import Backup…") {
+                        backupCoordinator.isImporting = true
+                    }
+                }
+            } header: {
+                Text("Backup")
+            } footer: {
+                Text("A backup contains all wallets and revenues as a .moneytalks file. Importing merges the data, items that already exist are skipped.")
+            }
             Section {
                 LabeledContent("Revenues") {
                     Button("Delete All Revenues", role: .destructive) {
@@ -64,4 +83,5 @@ struct SettingsView: View {
     return SettingsView()
         .environment(RevenueRepository(modelContext: container.mainContext))
         .environment(WalletRepository(modelContext: container.mainContext))
+        .environment(BackupCoordinator())
 }

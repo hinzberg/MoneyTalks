@@ -14,6 +14,7 @@ struct MoneyTalksApp: App {
     @State private var repository: RevenueRepository
     @State private var walletRepository: WalletRepository
     @State private var importCoordinator = CSVImportCoordinator()
+    @State private var backupCoordinator = BackupCoordinator()
 
     private let modelContainer: ModelContainer
     private let modelContext: ModelContext
@@ -35,6 +36,7 @@ struct MoneyTalksApp: App {
                 .environment(repository)
                 .environment(walletRepository)
                 .environment(importCoordinator)
+                .environment(backupCoordinator)
         }
         .commands {
             CommandGroup(after: .newItem) {
@@ -42,13 +44,23 @@ struct MoneyTalksApp: App {
                     importCoordinator.isImportingCSV = true
                 }
                 .keyboardShortcut("i", modifiers: [.command, .shift])
+                Button("Export Backup…") {
+                    backupCoordinator.prepareExport(walletRepository: walletRepository,
+                                                    revenueRepository: repository)
+                }
+                .keyboardShortcut("e", modifiers: [.command, .shift])
+                .disabled(repository.revenues.isEmpty && walletRepository.wallets.isEmpty)
+                Button("Import Backup…") {
+                    backupCoordinator.isImporting = true
+                }
+                .keyboardShortcut("b", modifiers: [.command, .shift])
             }
         }
     }
 
     /// Bump this whenever the model schema changes incompatibly. The on-disk
     /// store is then deleted once, so the user starts fresh and re-imports
-    /// the CSV data.
+    /// the CSV data or restores a .moneytalks backup.
     private static let schemaVersion = 2
 
     private static func makeModelContainer() -> ModelContainer {
