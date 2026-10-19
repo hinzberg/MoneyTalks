@@ -25,24 +25,16 @@ struct WalletsView: View {
                                        description: Text("Use the add button to create your first wallet."))
             } else {
                 List(selection: $selectedWalletID) {
-                    ForEach(repository.wallets) { wallet in
-                        WalletRowView(wallet: wallet)
-                            .tag(wallet.id)
-                            .overlay {
-                                DoubleClickDetector {
-                                    beginEditing(wallet)
-                                }
-                            }
-                            .contextMenu {
-                                Button("Edit") {
-                                    beginEditing(wallet)
-                                }
-                                Button("Delete", role: .destructive) {
-                                    delete(wallet)
-                                }
-                            }
+                    if !incomingWallets.isEmpty {
+                        Section("Incoming") {
+                            walletRows(incomingWallets)
+                        }
                     }
-                    .onDelete(perform: deleteWallets(atOffsets:))
+                    if !outgoingWallets.isEmpty {
+                        Section("Outgoing") {
+                            walletRows(outgoingWallets)
+                        }
+                    }
                 }
             }
         }
@@ -90,9 +82,41 @@ struct WalletsView: View {
         }
     }
 
+    private var incomingWallets: [Wallet] {
+        repository.wallets.filter(\.isIncomming)
+    }
+
+    private var outgoingWallets: [Wallet] {
+        repository.wallets.filter { !$0.isIncomming }
+    }
+
     private var selectedWallet: Wallet? {
         guard let selectedWalletID else { return nil }
         return repository.wallets.first { $0.id == selectedWalletID }
+    }
+
+    @ViewBuilder
+    private func walletRows(_ wallets: [Wallet]) -> some View {
+        ForEach(wallets) { wallet in
+            WalletRowView(wallet: wallet)
+                .tag(wallet.id)
+                .overlay {
+                    DoubleClickDetector {
+                        beginEditing(wallet)
+                    }
+                }
+                .contextMenu {
+                    Button("Edit") {
+                        beginEditing(wallet)
+                    }
+                    Button("Delete", role: .destructive) {
+                        delete(wallet)
+                    }
+                }
+        }
+        .onDelete { offsets in
+            deleteWallets(in: wallets, atOffsets: offsets)
+        }
     }
 
     private func beginEditing(_ wallet: Wallet) {
@@ -112,9 +136,13 @@ struct WalletsView: View {
         }
     }
 
-    private func deleteWallets(atOffsets offsets: IndexSet) {
-        repository.remove(atOffsets: offsets)
-        revenueRepository.clearOrphanedConfirmations()
+    /// The offsets of an onDelete are relative to the section they belong to,
+    /// so they are resolved against the given array before deleting.
+    private func deleteWallets(in wallets: [Wallet], atOffsets offsets: IndexSet) {
+        for offset in offsets.sorted(by: >)
+        where wallets.indices.contains(offset) {
+            delete(wallets[offset])
+        }
     }
 
     private func deleteSelectedWallet() {
