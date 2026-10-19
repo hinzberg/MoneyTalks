@@ -19,7 +19,11 @@ struct WalletPillView: View {
             .padding(.vertical, 1)
             .background(
                 RoundedRectangle(cornerRadius: 4, style: .continuous)
-                    .stroke(wallet.color, lineWidth: 1)
+                    .fill(wallet.color.opacity(0.2))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .stroke(wallet.color, lineWidth: 1)
+                    }
             )
     }
 }

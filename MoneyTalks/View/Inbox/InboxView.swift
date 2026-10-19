@@ -39,6 +39,9 @@ struct InboxView: View {
             }
         }
         .frame(minWidth: 640, minHeight: 400)
+        .safeAreaInset(edge: .bottom) {
+            statusBar
+        }
         .searchable(text: $repository.searchText, placement: .toolbar, prompt: "Search")
         .onChange(of: repository.searchText) {
             clearSelectionIfFilteredOut()
@@ -136,6 +139,30 @@ struct InboxView: View {
 
     private var unconfirmedWithWalletCount: Int {
         repository.revenues.filter { $0.wallet != nil && !$0.walletConfirmed }.count
+    }
+
+    /// Counted from filteredInboxRevenues and their wallet property, so the
+    /// bar refreshes when a wallet is assigned or removed.
+    private var statusText: String {
+        let filtered = repository.filteredInboxRevenues
+        let withoutWallet = filtered.filter { $0.wallet == nil }.count
+        let itemLabel = filtered.count == 1 ? "item" : "items"
+        return "\(filtered.count) \(itemLabel) · \(withoutWallet) without a wallet"
+    }
+
+    @ViewBuilder
+    private var statusBar: some View {
+        Text(statusText)
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 5)
+            .background(.bar)
+            .overlay(alignment: .top) {
+                Divider()
+            }
     }
 
     private func confirmAllUnconfirmedWithWallet() {
