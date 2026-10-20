@@ -325,6 +325,67 @@ struct RevenueRepositoryTests {
         #expect(repository.filteredInboxRevenues.isEmpty)
     }
 
+    @Test func filteredInboxDateRangeIncludesStartAndEndDay() throws {
+        let early = makeRevenue(bookingDate: Self.day(2026, 10, 10), purpose: "Zu früh")
+        let onStart = makeRevenue(bookingDate: Self.day(2026, 10, 11), purpose: "Am Start")
+        let onEnd = makeRevenue(bookingDate: Self.day(2026, 10, 20), purpose: "Am Ende")
+        let late = makeRevenue(bookingDate: Self.day(2026, 10, 21), purpose: "Zu spät")
+        repository.add(contentsOf: [early, onStart, onEnd, late])
+
+        repository.filterStartDate = Self.day(2026, 10, 11)
+        repository.filterEndDate = Self.day(2026, 10, 20)
+
+        #expect(repository.filteredInboxRevenues.map(\.id) == [onStart.id, onEnd.id])
+    }
+
+    @Test func filteredInboxDateRangeWithoutBoundsReturnsAll() throws {
+        let revenue = makeRevenue(bookingDate: Self.day(2026, 10, 15))
+        repository.add(revenue)
+
+        repository.filterStartDate = Self.day(2026, 10, 11)
+        #expect(repository.filteredInboxRevenues.map(\.id) == [revenue.id])
+
+        repository.filterStartDate = nil
+        repository.filterEndDate = Self.day(2026, 10, 20)
+        #expect(repository.filteredInboxRevenues.map(\.id) == [revenue.id])
+
+        repository.filterEndDate = nil
+        #expect(repository.filteredInboxRevenues.map(\.id) == [revenue.id])
+    }
+
+    @Test func filteredInboxWalletFilterOnlyReturnsRevenuesOfThatWallet() throws {
+        let girokonto = insertWallet(named: "Girokonto")
+        let tagesgeld = insertWallet(named: "Tagesgeld")
+        let first = makeRevenue(purpose: "Erste")
+        let second = makeRevenue(purpose: "Zweite")
+        let third = makeRevenue(purpose: "Dritte")
+        repository.add(contentsOf: [first, second, third])
+        repository.setWallet(girokonto, for: first)
+        repository.setWallet(tagesgeld, for: second)
+
+        repository.filterWalletID = girokonto.id
+        #expect(repository.filteredInboxRevenues.map(\.id) == [first.id])
+
+        repository.filterWalletID = tagesgeld.id
+        #expect(repository.filteredInboxRevenues.map(\.id) == [second.id])
+
+        repository.filterWalletID = nil
+        #expect(repository.filteredInboxRevenues.map(\.id) == [first.id, second.id, third.id])
+    }
+
+    @Test func filteredInboxCombinesWalletAndSearchFilter() throws {
+        let girokonto = insertWallet(named: "Girokonto")
+        let withWallet = makeRevenue(purpose: "Telekom Rechnung")
+        let withoutWallet = makeRevenue(purpose: "Telekom Gutschrift")
+        repository.add(contentsOf: [withWallet, withoutWallet])
+        repository.setWallet(girokonto, for: withWallet)
+
+        repository.filterWalletID = girokonto.id
+        repository.searchText = "telekom"
+
+        #expect(repository.filteredInboxRevenues.map(\.id) == [withWallet.id])
+    }
+
     // MARK: - Fetching
 
     @Test func newRepositoryFetchesRevenuesSortedByBookingDateDescending() throws {
@@ -341,6 +402,14 @@ struct RevenueRepositoryTests {
     }
 
     // MARK: - Helpers
+
+    private static func day(_ year: Int, _ month: Int, _ day: Int) -> Date {
+        var components = DateComponents()
+        components.year = year
+        components.month = month
+        components.day = day
+        return Calendar.current.date(from: components) ?? Date(timeIntervalSince1970: 0)
+    }
 
     @discardableResult
     private func insertWallet(named name: String = "Girokonto") -> Wallet {

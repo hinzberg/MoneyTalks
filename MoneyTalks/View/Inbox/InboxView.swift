@@ -9,6 +9,7 @@ import UniformTypeIdentifiers
 struct InboxView: View {
 
     @Environment(RevenueRepository.self) private var repository
+    @Environment(WalletRepository.self) private var walletRepository
     @Environment(CSVImportCoordinator.self) private var importCoordinator
 
     @State private var selectedRevenueID: Revenue.ID?
@@ -17,34 +18,40 @@ struct InboxView: View {
 
     var body: some View {
         @Bindable var importCoordinator = importCoordinator
-        @Bindable var repository = repository
 
-        Group {
-            if repository.revenues.isEmpty {
-                ContentUnavailableView("No Revenues",
-                                       systemImage: "list.bullet.rectangle",
-                                       description: Text("Use File ▸ Import CSV… to load transactions."))
-            } else if repository.filteredInboxRevenues.isEmpty {
-                ContentUnavailableView("Inbox is Empty",
-                                       systemImage: "tray",
-                                       description: Text("All revenues are confirmed in the wallet or do not match the search."))
-            } else {
-                List(selection: $selectedRevenueID) {
-                    ForEach(repository.filteredInboxRevenues) { revenue in
-                        RevenueRowView(revenue: revenue)
-                            .tag(revenue.id)
+        VStack(spacing: 0) {
+            RevenueFilterView()
+            Divider()
+            Group {
+                if repository.revenues.isEmpty {
+                    ContentUnavailableView("No Revenues",
+                                           systemImage: "list.bullet.rectangle",
+                                           description: Text("Use File ▸ Import CSV… to load transactions."))
+                } else if repository.filteredInboxRevenues.isEmpty {
+                    ContentUnavailableView("Inbox is Empty",
+                                           systemImage: "tray",
+                                           description: Text("All revenues are confirmed in the wallet or do not match the current filters."))
+                } else {
+                    List(selection: $selectedRevenueID) {
+                        ForEach(repository.filteredInboxRevenues) { revenue in
+                            RevenueRowView(revenue: revenue)
+                                .tag(revenue.id)
+                        }
+                        .onDelete(perform: removeRevenues)
                     }
-                    .onDelete(perform: removeRevenues)
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(minWidth: 640, minHeight: 400)
         .safeAreaInset(edge: .bottom) {
             statusBar
         }
-        .searchable(text: $repository.searchText, placement: .toolbar, prompt: "Search")
-        .onChange(of: repository.searchText) {
+        .onChange(of: repository.filteredInboxRevenues) {
             clearSelectionIfFilteredOut()
+        }
+        .onChange(of: walletRepository.wallets) {
+            clearFilterIfWalletWasDeleted()
         }
         .inspector(isPresented: Binding(get: { isInspectorPresented }, set: { isInspectorPresented = $0 })) {
             inspector
@@ -118,6 +125,15 @@ struct InboxView: View {
     private func clearSelectionIfFilteredOut() {
         guard selectedRevenueID != nil, selectedRevenue == nil else { return }
         selectedRevenueID = nil
+    }
+
+    /// Resets the wallet filter when the filtered wallet no longer exists,
+    /// otherwise the inbox would stay empty without a visible cause.
+    private func clearFilterIfWalletWasDeleted() {
+        guard let filterWalletID = repository.filterWalletID else { return }
+        if !walletRepository.wallets.contains(where: { $0.id == filterWalletID }) {
+            repository.filterWalletID = nil
+        }
     }
 
     private func importFiles(_ result: Result<[URL], Error>) {

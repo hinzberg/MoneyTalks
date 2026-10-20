@@ -20,15 +20,41 @@ final class RevenueRepository {
 
     var searchText: String = ""
 
-    /// Revenues that are not yet confirmed in the wallet, reduced by the current search term.
+    /// Inclusive start of the booking date range. nil means unbounded.
+    var filterStartDate: Date?
+
+    /// Inclusive end of the booking date range. nil means unbounded.
+    var filterEndDate: Date?
+
+    /// Only revenues of this wallet are shown. nil means all wallets.
+    var filterWalletID: Wallet.ID?
+
+    /// Revenues that are not yet confirmed in the wallet, reduced by the
+    /// active filters (wallet, booking date range and search term).
     var filteredInboxRevenues: [Revenue] {
         let searchTerm = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return revenues.filter { revenue in
             guard !revenue.walletConfirmed else { return false }
+            if let filterWalletID, revenue.wallet?.id != filterWalletID { return false }
+            if !isWithinDateRange(revenue.bookingDate) { return false }
             guard !searchTerm.isEmpty else { return true }
             return [revenue.beneficiaryOrPayer, revenue.purpose, revenue.bookingText]
                 .contains { $0.localizedCaseInsensitiveContains(searchTerm) }
         }
+    }
+
+    /// Start and end day are both inclusive.
+    private func isWithinDateRange(_ date: Date) -> Bool {
+        let calendar = Calendar.current
+        if let filterStartDate, date < calendar.startOfDay(for: filterStartDate) {
+            return false
+        }
+        if let filterEndDate,
+           let dayAfterEnd = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: filterEndDate)),
+           date >= dayAfterEnd {
+            return false
+        }
+        return true
     }
 
     init(modelContext: ModelContext) {
