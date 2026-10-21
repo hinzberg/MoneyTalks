@@ -285,16 +285,16 @@ struct RevenueRepositoryTests {
             beneficiaryOrPayer: "Stadtwerke Köln")
         repository.add(contentsOf: [telekom, stadtwerke])
 
-        repository.searchText = "telekom"
+        repository.inboxFilter.searchText = "telekom"
         #expect(repository.filteredInboxRevenues.map(\.id) == [telekom.id])
 
-        repository.searchText = "strom"
+        repository.inboxFilter.searchText = "strom"
         #expect(repository.filteredInboxRevenues.map(\.id) == [stadtwerke.id])
 
-        repository.searchText = "folge"
+        repository.inboxFilter.searchText = "folge"
         #expect(repository.filteredInboxRevenues.map(\.id) == [telekom.id])
 
-        repository.searchText = "LASTSCHRIFT"
+        repository.inboxFilter.searchText = "LASTSCHRIFT"
         #expect(repository.filteredInboxRevenues.map(\.id) == [telekom.id, stadtwerke.id])
     }
 
@@ -303,7 +303,7 @@ struct RevenueRepositoryTests {
         repository.add(revenue)
         repository.setWalletConfirmed(true, for: revenue)
 
-        repository.searchText = "telekom"
+        repository.inboxFilter.searchText = "telekom"
 
         #expect(repository.filteredInboxRevenues.isEmpty)
     }
@@ -312,7 +312,7 @@ struct RevenueRepositoryTests {
         repository.add(makeRevenue(purpose: "Miete"))
         repository.add(makeRevenue(purpose: "Strom"))
 
-        repository.searchText = "   "
+        repository.inboxFilter.searchText = "   "
 
         #expect(repository.filteredInboxRevenues.count == 2)
     }
@@ -320,7 +320,7 @@ struct RevenueRepositoryTests {
     @Test func filteredInboxSearchWithoutMatchReturnsEmpty() throws {
         repository.add(makeRevenue(purpose: "Miete"))
 
-        repository.searchText = "existiert nicht"
+        repository.inboxFilter.searchText = "existiert nicht"
 
         #expect(repository.filteredInboxRevenues.isEmpty)
     }
@@ -332,8 +332,8 @@ struct RevenueRepositoryTests {
         let late = makeRevenue(bookingDate: Self.day(2026, 10, 21), purpose: "Zu spät")
         repository.add(contentsOf: [early, onStart, onEnd, late])
 
-        repository.filterStartDate = Self.day(2026, 10, 11)
-        repository.filterEndDate = Self.day(2026, 10, 20)
+        repository.inboxFilter.startDate = Self.day(2026, 10, 11)
+        repository.inboxFilter.endDate = Self.day(2026, 10, 20)
 
         #expect(repository.filteredInboxRevenues.map(\.id) == [onStart.id, onEnd.id])
     }
@@ -342,14 +342,14 @@ struct RevenueRepositoryTests {
         let revenue = makeRevenue(bookingDate: Self.day(2026, 10, 15))
         repository.add(revenue)
 
-        repository.filterStartDate = Self.day(2026, 10, 11)
+        repository.inboxFilter.startDate = Self.day(2026, 10, 11)
         #expect(repository.filteredInboxRevenues.map(\.id) == [revenue.id])
 
-        repository.filterStartDate = nil
-        repository.filterEndDate = Self.day(2026, 10, 20)
+        repository.inboxFilter.startDate = nil
+        repository.inboxFilter.endDate = Self.day(2026, 10, 20)
         #expect(repository.filteredInboxRevenues.map(\.id) == [revenue.id])
 
-        repository.filterEndDate = nil
+        repository.inboxFilter.endDate = nil
         #expect(repository.filteredInboxRevenues.map(\.id) == [revenue.id])
     }
 
@@ -363,13 +363,13 @@ struct RevenueRepositoryTests {
         repository.setWallet(girokonto, for: first)
         repository.setWallet(tagesgeld, for: second)
 
-        repository.filterWalletID = girokonto.id
+        repository.inboxFilter.walletID = girokonto.id
         #expect(repository.filteredInboxRevenues.map(\.id) == [first.id])
 
-        repository.filterWalletID = tagesgeld.id
+        repository.inboxFilter.walletID = tagesgeld.id
         #expect(repository.filteredInboxRevenues.map(\.id) == [second.id])
 
-        repository.filterWalletID = nil
+        repository.inboxFilter.walletID = nil
         #expect(repository.filteredInboxRevenues.map(\.id) == [first.id, second.id, third.id])
     }
 
@@ -380,14 +380,70 @@ struct RevenueRepositoryTests {
         repository.add(contentsOf: [withWallet, withoutWallet])
         repository.setWallet(girokonto, for: withWallet)
 
-        repository.filterWalletID = girokonto.id
-        repository.searchText = "telekom"
+        repository.inboxFilter.walletID = girokonto.id
+        repository.inboxFilter.searchText = "telekom"
 
         #expect(repository.filteredInboxRevenues.map(\.id) == [withWallet.id])
     }
 
-    // MARK: - Fetching
+    // MARK: - filteredConfirmedRevenues
 
+    @Test func filteredConfirmedReturnsOnlyConfirmedRevenues() throws {
+        let confirmed = makeRevenue(purpose: "Erstattung", walletConfirmed: true)
+        let open = makeRevenue(purpose: "Rechnung")
+        repository.add(contentsOf: [confirmed, open])
+
+        #expect(repository.filteredConfirmedRevenues.map(\.id) == [confirmed.id])
+    }
+
+    @Test func filteredConfirmedAppliesSearchAndWalletFilter() throws {
+        let girokonto = insertWallet(named: "Girokonto")
+        let confirmed = makeRevenue(purpose: "Telekom Rechnung", walletConfirmed: true)
+        let otherConfirmed = makeRevenue(purpose: "Strom Abschlag", walletConfirmed: true)
+        repository.add(contentsOf: [confirmed, otherConfirmed])
+        repository.setWallet(girokonto, for: confirmed)
+
+        repository.confirmedFilter.walletID = girokonto.id
+        #expect(repository.filteredConfirmedRevenues.map(\.id) == [confirmed.id])
+
+        repository.confirmedFilter.walletID = nil
+        repository.confirmedFilter.searchText = "strom"
+        #expect(repository.filteredConfirmedRevenues.map(\.id) == [otherConfirmed.id])
+    }
+
+    @Test func filteredConfirmedRespectsDateRange() throws {
+        let inRange = makeRevenue(bookingDate: Self.day(2026, 10, 15), purpose: "Drin", walletConfirmed: true)
+        let outOfRange = makeRevenue(bookingDate: Self.day(2026, 9, 1), purpose: "Draußen", walletConfirmed: true)
+        repository.add(contentsOf: [inRange, outOfRange])
+
+        repository.confirmedFilter.startDate = Self.day(2026, 10, 1)
+        repository.confirmedFilter.endDate = Self.day(2026, 10, 31)
+
+        #expect(repository.filteredConfirmedRevenues.map(\.id) == [inRange.id])
+    }
+
+    @Test func inboxAndConfirmedFiltersAreIndependent() throws {
+        let confirmed = makeRevenue(purpose: "Erstattung", walletConfirmed: true)
+        let open = makeRevenue(purpose: "Rechnung")
+        repository.add(contentsOf: [confirmed, open])
+
+        // Filtering the inbox does not touch the confirmed revenue list.
+        repository.inboxFilter.searchText = "rechnung"
+        #expect(repository.filteredInboxRevenues.map(\.id) == [open.id])
+        #expect(repository.filteredConfirmedRevenues.map(\.id) == [confirmed.id])
+
+        // Filtering the confirmed revenues does not touch the inbox.
+        repository.confirmedFilter.searchText = "erstattung"
+        #expect(repository.filteredConfirmedRevenues.map(\.id) == [confirmed.id])
+        #expect(repository.filteredInboxRevenues.map(\.id) == [open.id])
+
+        // Both filters can be active at the same time.
+        repository.inboxFilter.searchText = "erstattung"
+        #expect(repository.filteredInboxRevenues.isEmpty)
+        #expect(repository.filteredConfirmedRevenues.map(\.id) == [confirmed.id])
+    }
+
+    // MARK: - Fetching
     @Test func newRepositoryFetchesRevenuesSortedByBookingDateDescending() throws {
         let context = container.mainContext
         let older = makeRevenue(bookingDate: Date(timeIntervalSince1970: 1_000_000), purpose: "Älter")

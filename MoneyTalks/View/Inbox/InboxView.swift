@@ -18,9 +18,10 @@ struct InboxView: View {
 
     var body: some View {
         @Bindable var importCoordinator = importCoordinator
+        @Bindable var repository = repository
 
         VStack(spacing: 0) {
-            RevenueFilterView()
+            RevenueFilterView(filter: $repository.inboxFilter)
             Divider()
             Group {
                 if repository.revenues.isEmpty {
@@ -130,9 +131,9 @@ struct InboxView: View {
     /// Resets the wallet filter when the filtered wallet no longer exists,
     /// otherwise the inbox would stay empty without a visible cause.
     private func clearFilterIfWalletWasDeleted() {
-        guard let filterWalletID = repository.filterWalletID else { return }
+        guard let filterWalletID = repository.inboxFilter.walletID else { return }
         if !walletRepository.wallets.contains(where: { $0.id == filterWalletID }) {
-            repository.filterWalletID = nil
+            repository.inboxFilter.walletID = nil
         }
     }
 

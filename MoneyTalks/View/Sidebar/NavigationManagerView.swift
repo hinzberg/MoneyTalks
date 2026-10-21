@@ -20,6 +20,8 @@ struct NavigationManagerView: View {
     {
         sideBarItems =  [
             NavigationSideBarItem(displayText: "Inbox", imageName: "tray.and.arrow.down", identifier: .inbox),
+            NavigationSideBarItem(displayText: "Revenue", imageName: "tray.2", identifier: .revenue),
+            NavigationSideBarItem(displayText: "Rules", imageName: "arrow.forward.folder", identifier: .rules),
             NavigationSideBarItem(displayText: "Wallets", imageName: "wallet.bifold", identifier: .wallet),
             NavigationSideBarItem(displayText: "Settings", imageName: "gear", identifier: .settings)
         ]
@@ -41,6 +43,10 @@ struct NavigationManagerView: View {
             switch selectedIdentifier {
             case .inbox:
                 InboxView()
+            case .revenue:
+                RevenueView()
+            case .rules:
+                RulesView()
             case .wallet:
                 WalletsView()
             case .settings:

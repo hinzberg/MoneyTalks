@@ -8,12 +8,13 @@
 import SwiftData
 import SwiftUI
 
-/// Horizontal filter bar for the inbox: booking date range, wallet and text.
-/// The state lives on RevenueRepository, so the list, the status bar and the
-/// selection all react to changes automatically.
+/// Horizontal filter bar: booking date range, wallet and text. The bound
+/// filter belongs to the list that shows this view, so the inbox and the
+/// confirmed revenue list are filtered independently.
 struct RevenueFilterView: View {
 
-    @Environment(RevenueRepository.self) private var repository
+    @Binding var filter: RevenueFilter
+
     @Environment(WalletRepository.self) private var walletRepository
 
     /// Shown in the pickers while no explicit start or end date is set.
@@ -21,20 +22,18 @@ struct RevenueFilterView: View {
     private static let unboundedEndDate = Date(timeIntervalSince1970: 4_102_444_800) // 2100-01-01
 
     var body: some View {
-        @Bindable var repository = repository
-
         HStack(spacing: 12) {
             DatePicker("From", selection: startDateBinding, displayedComponents: .date)
             clearButton("Remove start date") {
-                repository.filterStartDate = nil
+                filter.startDate = nil
             }
 
             DatePicker("To", selection: endDateBinding, displayedComponents: .date)
             clearButton("Remove end date") {
-                repository.filterEndDate = nil
+                filter.endDate = nil
             }
 
-            Picker("Wallet", selection: $repository.filterWalletID) {
+            Picker("Wallet", selection: $filter.walletID) {
                 Text("All Wallets").tag(Wallet.ID?.none)
                 ForEach(walletRepository.wallets) { wallet in
                     Text(wallet.name).tag(Wallet.ID?.some(wallet.id))
@@ -42,7 +41,7 @@ struct RevenueFilterView: View {
             }
             .pickerStyle(.menu)
 
-            TextField("Search", text: $repository.searchText)
+            TextField("Search", text: $filter.searchText)
                 .textFieldStyle(.roundedBorder)
                 .frame(maxWidth: 260)
 
@@ -57,31 +56,28 @@ struct RevenueFilterView: View {
     }
 
     private var hasActiveFilters: Bool {
-        repository.filterStartDate != nil
-            || repository.filterEndDate != nil
-            || repository.filterWalletID != nil
-            || !repository.searchText.isEmpty
+        filter.startDate != nil
+            || filter.endDate != nil
+            || filter.walletID != nil
+            || !filter.searchText.isEmpty
     }
 
     private func clearFilters() {
-        repository.filterStartDate = nil
-        repository.filterEndDate = nil
-        repository.filterWalletID = nil
-        repository.searchText = ""
+        filter = RevenueFilter()
     }
 
     /// DatePicker needs a non-optional binding; the wide default values stand
     /// for "no filter" until the user picks a date.
     private var startDateBinding: Binding<Date> {
         Binding(
-            get: { repository.filterStartDate ?? Self.unboundedStartDate },
-            set: { repository.filterStartDate = $0 })
+            get: { filter.startDate ?? Self.unboundedStartDate },
+            set: { filter.startDate = $0 })
     }
 
     private var endDateBinding: Binding<Date> {
         Binding(
-            get: { repository.filterEndDate ?? Self.unboundedEndDate },
-            set: { repository.filterEndDate = $0 })
+            get: { filter.endDate ?? Self.unboundedEndDate },
+            set: { filter.endDate = $0 })
     }
 
     private func clearButton(_ help: String, action: @escaping () -> Void) -> some View {
@@ -96,7 +92,6 @@ struct RevenueFilterView: View {
 
 #Preview {
     let container = try! ModelContainer(for: Revenue.self, Wallet.self, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-    return RevenueFilterView()
-        .environment(RevenueRepository(modelContext: container.mainContext))
+    return RevenueFilterView(filter: .constant(RevenueFilter()))
         .environment(WalletRepository(modelContext: container.mainContext))
 }

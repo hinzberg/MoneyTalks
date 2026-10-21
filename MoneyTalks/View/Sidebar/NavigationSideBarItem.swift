@@ -8,6 +8,8 @@ import SwiftUI
 
 public enum NavigationSideBarItemIdentifier {
     case inbox
+    case revenue
+    case rules
     case wallet
     case settings
 }

@@ -18,43 +18,22 @@ final class RevenueRepository {
     private(set) var revenues: [Revenue] = []
     private(set) var lastSaveErrorMessage: String?
 
-    var searchText: String = ""
+    /// Filter criteria of the inbox list.
+    var inboxFilter = RevenueFilter()
 
-    /// Inclusive start of the booking date range. nil means unbounded.
-    var filterStartDate: Date?
-
-    /// Inclusive end of the booking date range. nil means unbounded.
-    var filterEndDate: Date?
-
-    /// Only revenues of this wallet are shown. nil means all wallets.
-    var filterWalletID: Wallet.ID?
+    /// Filter criteria of the list of confirmed revenues.
+    var confirmedFilter = RevenueFilter()
 
     /// Revenues that are not yet confirmed in the wallet, reduced by the
-    /// active filters (wallet, booking date range and search term).
+    /// filters of the inbox.
     var filteredInboxRevenues: [Revenue] {
-        let searchTerm = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return revenues.filter { revenue in
-            guard !revenue.walletConfirmed else { return false }
-            if let filterWalletID, revenue.wallet?.id != filterWalletID { return false }
-            if !isWithinDateRange(revenue.bookingDate) { return false }
-            guard !searchTerm.isEmpty else { return true }
-            return [revenue.beneficiaryOrPayer, revenue.purpose, revenue.bookingText]
-                .contains { $0.localizedCaseInsensitiveContains(searchTerm) }
-        }
+        revenues.filter { !$0.walletConfirmed && inboxFilter.matches($0) }
     }
 
-    /// Start and end day are both inclusive.
-    private func isWithinDateRange(_ date: Date) -> Bool {
-        let calendar = Calendar.current
-        if let filterStartDate, date < calendar.startOfDay(for: filterStartDate) {
-            return false
-        }
-        if let filterEndDate,
-           let dayAfterEnd = calendar.date(byAdding: .day, value: 1, to: calendar.startOfDay(for: filterEndDate)),
-           date >= dayAfterEnd {
-            return false
-        }
-        return true
+    /// Confirmed revenues (walletConfirmed == true), reduced by the filters
+    /// of the confirmed revenue list.
+    var filteredConfirmedRevenues: [Revenue] {
+        revenues.filter { $0.walletConfirmed && confirmedFilter.matches($0) }
     }
 
     init(modelContext: ModelContext) {
